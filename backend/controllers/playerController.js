@@ -6,7 +6,7 @@ const sign = (req, res) => {
   if (existing) return res.status(400).json({ message: " already user" });
   console.log("sign", req.body);
   userarr.push({ name, password });
-  return  res.status(200).json({ m: "sign secussfull" });
+  return res.status(200).json({ m: "sign secussfull" });
 };
 
 const login = (req, res) => {
@@ -24,7 +24,7 @@ const login = (req, res) => {
 const logout = (req, res) => {
   console.log("logout");
   req.session.destroy();
-   return res.status(200).json({ message: "Logged out" });
+  return res.status(200).json({ message: "Logged out" });
 };
 
 module.exports = { sign, login, logout };
