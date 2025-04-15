@@ -5,12 +5,14 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const cors = require("cors")
 const userroute = require('../backend/routes/playerRoutes');
-const sockethandler = require('../backend/sockets/socketHandler')
+const registerSocketEvents = require('../backend/controllers/socketController')
 const app= express();
 const server = http.createServer(app);
+const connectDB = require('../backend/config/db')
+connectDB();
 const io = new socket.Server(server,{
   cors: {
-    origin: "http://localhost:5173",
+    origin: "http://localhost:5173", 
     credentials: true
   },
   transports: ["websocket"]
@@ -26,7 +28,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
   }));
- sockethandler(io);
+  registerSocketEvents(io);
 
 app.use('/api/user', userroute)
 

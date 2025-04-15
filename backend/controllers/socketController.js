@@ -3,9 +3,9 @@ const {
     handleMove,
     handleDisconnect,
     handleG,
-  } = require("../controllers/socketController");
+  } = require("../sockets/socketHandler")
   
-  function sockethandler(io) {
+  function registerSocketEvents(io) {
     io.on("connection", (socket) => {
       console.log("User connected:", socket.id);
   
@@ -16,5 +16,5 @@ const {
     });
   }
   
-  module.exports = sockethandler;
+  module.exports = registerSocketEvents;
   
