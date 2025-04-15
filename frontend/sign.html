@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sign</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+  
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(270deg, #ff00cc, #3333ff, #00ffff, #ff9900);
+      background-size: 800% 800%;
+      animation: bodyGradient 20s ease infinite;
+      overflow: hidden;
+    }
+  
+    @keyframes bodyGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(30px);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      animation: pulseShadow 4s ease-in-out infinite;
+    }
+  
+    @keyframes pulseShadow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), 0 0 40px rgba(255, 0, 255, 0.2);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(255, 0, 255, 0.4), 0 0 60px rgba(0, 255, 255, 0.4);
+      }
+    }
+  
+    .login-container h1 {
+      margin-bottom: 25px;
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff00cc, #3333ff, #00ffff);
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textGradient 5s linear infinite;
+      background-size: 300%;
+    }
+  
+    @keyframes textGradient {
+      0% { background-position: 0% }
+      100% { background-position: 100% }
+    }
+  
+    form {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 20px;
+    }
+  
+    label {
+      font-weight: 600;
+      color: #ddd;
+      font-size: 14px;
+    }
+  
+    input {
+      padding: 14px;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      font-size: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      transition: 0.3s ease;
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+    }
+  
+    input::placeholder {
+      color: #aaa;
+    }
+  
+    input:focus {
+      border: 2px solid #ff00cc;
+      outline: none;
+      box-shadow: 0 0 15px #ff00cc99, 0 0 20px #00ffff99;
+      animation: focusPulse 1.2s infinite alternate;
+    }
+  
+    @keyframes focusPulse {
+      from {
+        box-shadow: 0 0 8px #ff00cc66, 0 0 10px #00ffff66;
+      }
+      to {
+        box-shadow: 0 0 16px #ff00ccaa, 0 0 24px #00ffffaa;
+      }
+    }
+  
+    button {
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #ff00cc, #00ffff, #ff9900);
+      background-size: 300%;
+      color: #000;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), 0 0 25px rgba(0, 255, 255, 0.3);
+      transition: all 0.3s ease;
+      animation: rainbowButton 5s linear infinite;
+    }
+  
+    @keyframes rainbowButton {
+      0% { background-position: 0% }
+      100% { background-position: 300% }
+    }
+  
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.6), 0 0 35px rgba(0, 255, 255, 0.4);
+    }
+  
+    .error-message {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #ff5555;
+      text-shadow: 0 0 5px #ff0000aa;
+      animation: flicker 1.5s infinite;
+    }
+  
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 35px 25px;
+      }
+    }
+  </style>
+  
+  
+  
+</head>
+<body>
+  <div class="login-container">
+    <h1>sign</h1>
+    <form id="loginForm" action="/api/user/sign" method="post">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="name" placeholder="Enter your username" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p id="errorMessage" class="error-message"></p>
+  </div>
+  
+</body>
+<script>
+  const form = document.getElementById('loginForm');
+  const errorMessage = document.getElementById('errorMessage');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent page reload
+
+    const name = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+      const res = await fetch('/api/user/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        errorMessage.style.color = 'lime';
+        errorMessage.textContent = data.m || 'Signed in successfully!';
+      } else {
+        errorMessage.style.color = '#ff5555';
+        errorMessage.textContent = data.message || 'Sign-in failed';
+      }
+    } catch (err) {
+      errorMessage.style.color = '#ff5555';
+      errorMessage.textContent = 'Something went wrong. Try again later.';
+    }
+  });
+</script>
+
+</html>

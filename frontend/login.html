@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+  
+    body {
+      height: 100vh;
+      background: radial-gradient(ellipse at top, #0f0f1a 0%, #080810 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+  
+    .login-container {
+      background: linear-gradient(145deg, #1a1a2e, #0f0f1a);
+      border-radius: 20px;
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 420px;
+      color: #f0f0f0;
+      box-shadow:
+        0 0 15px #1b1b33,
+        0 0 30px rgba(0, 255, 255, 0.1),
+        0 0 60px rgba(255, 0, 120, 0.05);
+      position: relative;
+      animation: fadeIn 1s ease-out forwards;
+    }
+  
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  
+    .login-container h1 {
+      margin-bottom: 25px;
+      font-size: 32px;
+      font-weight: 700;
+      color: #00ffff;
+      text-shadow: 0 0 10px #00ffff66;
+      text-align: center;
+    }
+  
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+  
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cccccc;
+    }
+  
+    input {
+      padding: 12px 14px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 2px solid #333;
+      background-color: #11131e;
+      color: #f2f2f2;
+      box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.02);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+  
+    input:focus {
+      outline: none;
+      border-color: #00ffff;
+      box-shadow: 0 0 10px #00ffff99;
+    }
+  
+    input::placeholder {
+      color: #777;
+    }
+  
+    button {
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00ffff, #ff00c8);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 15px #00ffff66;
+    }
+  
+    button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 25px #ff00ff99;
+    }
+  
+    .error-message {
+      font-size: 13px;
+      color: #ff3366;
+      text-align: center;
+      margin-top: 10px;
+      animation: flicker 1.5s infinite;
+    }
+  
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 30px 25px;
+      }
+    }
+  </style>
+  
+</head>
+<body>
+  <div class="login-container">
+    <h1>Login</h1>
+    <form id="loginForm" action="/api/user/login" method="post">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="name" placeholder="Enter your username" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p id="errorMessage" class="error-message"></p>
+  </div>
+  <!-- <script src="login.js"></script> -->
+</body>
+</html>

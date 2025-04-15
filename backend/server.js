@@ -3,7 +3,8 @@ const socket = require('socket.io')
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const cors = require("cors")
+const cors = require("cors");
+const path = require('path');
 const userroute = require('../backend/routes/playerRoutes');
 const registerSocketEvents = require('../backend/controllers/socketController')
 const app= express();
@@ -11,17 +12,18 @@ const server = http.createServer(app);
 const connectDB = require('../backend/config/db')
 connectDB();
 const io = new socket.Server(server,{
-  cors: {
-    origin: "http://localhost:5173", 
-    credentials: true
-  },
+  // cors: {
+  //   origin: "http://localhost:5173", 
+  //   credentials: true
+  // },
   transports: ["websocket"]
 });
 app.use(express.json());
-app.use(cors({
-  origin: "http://localhost:5173", // your frontend Vite server
-  credentials: true
-}));
+// app.use(cors({
+//   origin: "http://localhost:5173", // your frontend Vite server
+//   credentials: true
+// }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
     secret: 'your-secret-key',
@@ -29,7 +31,7 @@ app.use(session({
     saveUninitialized: false,
   }));
   registerSocketEvents(io);
-
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use('/api/user', userroute)
 
 server.listen(5000,()=>{
