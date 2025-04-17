@@ -10,4 +10,4 @@ const playerschema = new mongoose.Schema({
     losses: { type: Number, default: 0 },
 });
 
-module.exports= mongoose.Model('player',playerschema);
+module.exports= mongoose.model('player',playerschema);

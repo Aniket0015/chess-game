@@ -1,17 +1,20 @@
-const userarr = [];
-const sign = (req, res) => {
+const Player = require('../models/Player'); 
+const mongoose = require('mongoose');
+const sign = async (req, res) => {
   console.log("sign");
   const { name, password } = req.body;
-  const existing = userarr.find((user) => user.name === name);
+  const existing =  await Player.findOne({username:name});
   if (existing) return res.status(400).json({ message: " already user" });
+  
+  const user = new Player({username:name, password})
   console.log("sign", req.body);
-  userarr.push({ name, password });
+   await user.save();
   return   res.redirect("http://localhost:5000/login.html");
 };
 
-const login = (req, res) => {
+const login = async  (req, res) => {
   const { name, password } = req.body;
-  const existing = userarr.find((user) => user.name === name);
+  const existing =  await Player.findOne({username:name});
 
   if (!existing) return res.redirect("http://localhost:5000/sign.html");
   if (existing.password !== password)
