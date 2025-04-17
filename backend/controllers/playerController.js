@@ -16,9 +16,9 @@ const login = (req, res) => {
   if (!existing) return res.redirect("http://localhost:5000/sign.html");
   if (existing.password !== password)
     return res.status(400).json({ message: "wrong password" });
-  req.session.vaild = true;
+  req.session.valid = true;
   console.log(req.body);
-  return res.redirect("http://localhost:5000/home.html") ;
+  return res.redirect("/home") ;
 };
 
 const logout = (req, res) => {

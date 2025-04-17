@@ -6,6 +6,7 @@ const session = require('express-session');
 const cors = require("cors");
 const path = require('path');
 const userroute = require('../backend/routes/playerRoutes');
+const gameroute = require('../backend/routes/gameRoutes');
 const registerSocketEvents = require('../backend/controllers/socketController')
 const app= express();
 const server = http.createServer(app);
@@ -32,8 +33,8 @@ app.use(session({
   }));
   registerSocketEvents(io);
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
-app.use('/api/user', userroute)
-
+app.use('/', userroute)
+app.use('/', gameroute)
 server.listen(5000,()=>{
     console.log("server is on port 5000");
 })

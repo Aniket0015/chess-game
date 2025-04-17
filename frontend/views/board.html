@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Chess Multiplayer</title>
+  <style>
+    body {
+      background-image: url('../background.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+  
+    #board {
+      width: 480px; /* Set your desired size */
+    }
+  </style>
+  
+  <link rel="stylesheet" href="../chessboard.css">
+  
+</head>
+<body>
+
+  <div id="board"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script src="../chessboard.js"></script>
+
+
+  <script>
+    const board = Chessboard('board', {
+      position: 'start',
+      draggable: true,
+      pieceTheme: '../img/chesspieces/wikipedia/{piece}.png'
+    });
+  </script>
+  
+</body>
+</html>
