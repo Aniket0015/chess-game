@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chess Game</title>
+  <!-- <link rel="stylesheet" href="style.css" /> -->
+   <style>
+    body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 20px;
+    background-image: url(background.jpg);
+    background-size: cover;
+  }
+  
+  h1 {
+    margin-bottom: 10px;
+  }
+  
+  #status {
+    margin: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(8, 60px);
+    border: 2px solid #333;
+  }
+  
+  .cell {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  
+  .cell.white {
+    background-color: #f0d9b5;
+  }
+  
+  .cell.black {
+    background-color: #b58863;
+  }
+  
+  .piece {
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+  }
+  
+  .cell.selected {
+    outline: 3px solid yellow;
+  }
+  
+  .cell.range::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    background-color: rgba(0, 255, 0, 0.6);
+    border-radius: 50%;
+    position: absolute;
+  }
+  
+  /* Popup styling */
+  .popup {
+    display: none;
+    position: fixed;
+    z-index: 10;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .popup-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px 30px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 0 10px black;
+  }
+  
+ 
+  
+  #popup-text {
+    font-size: 18px;
+    margin-top: 10px;
+  }
+  #restart-button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  #restart-button:hover {
+    background-color: #45a049;
+  }
+  /* #insidere{
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  } */
+
+
+  
+   </style>
+</head>
+<body>
+  <h1>Chess Game With AI</h1>
+  
+  <div id="status"></div>
+  
+  <div id="board" class="board"></div>
+  
+  <button id="restart-button">Restart Game</button>
+
+  <!-- Popup for game result -->
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <span id="popup-text"></span><br><br>
+      <button id="popup-close">Close</button>
+      <button onclick="resetGame() " id="insidere">Restart</button>
+    </div>
+  </div>
+
+  <!-- <script src="full-chess.js"></script> -->
+  <script>
+    document.getElementById("restart-button").onclick = resetGame;
+    // full-chess-rules.js
+
+const boardElement = document.getElementById("board");
+const statusElement = document.getElementById("status");
+const popupElement = document.getElementById("popup");
+const popupText = document.getElementById("popup-text");
+const popupClose = document.getElementById("popup-close");
+
+const initialBoard = [
+  ["r", "n", "b", "q", "k", "b", "n", "r"],
+  ["p", "p", "p", "p", "p", "p", "p", "p"],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["P", "P", "P", "P", "P", "P", "P", "P"],
+  ["R", "N", "B", "Q", "K", "B", "N", "R"]
+];
+
+const pieceImages = {
+  "K": "public/Wking.png",
+  "Q": "public/Wqueen.png",
+  "R": "public/Wrook.png",
+  "N": "public/Wknight.png",
+  "P": "public/Wpawn.png",
+  "B": "public/Wbishop.png",
+  "k": "public/Bking.png",
+  "q": "public/Bqueen.png",
+  "r": "public/Brook.png",
+  "b": "public/Bbishop.png",
+  "n": "public/Bknight.png",
+  "p": "public/Bpawn.png"
+};
+
+let board = JSON.parse(JSON.stringify(initialBoard));
+let selected = null;
+let aiThinking = false;
+
+function isWhite(piece) {
+  return piece === piece.toUpperCase();
+}
+
+function clearHighlights() {
+  document.querySelectorAll(".cell").forEach(cell => {
+    cell.classList.remove("selected", "range");
+  });
+}
+
+function isInsideBoard(row, col) {
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
+function isCheck(board, whiteTurn) {
+  let kingPos = null;
+  const kingSymbol = whiteTurn ? "K" : "k";
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r][c] === kingSymbol) kingPos = [r, c];
+    }
+  }
+
+  if (!kingPos) return false;
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      let piece = board[r][c];
+      if (piece && isWhite(piece) !== whiteTurn) {
+        if (isValidMove(board, r, c, kingPos[0], kingPos[1], true)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function simulateMove(board, fromRow, fromCol, toRow, toCol) {
+  const newBoard = board.map(row => row.slice());
+  newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
+  newBoard[fromRow][fromCol] = "";
+  return newBoard;
+}
+
+function hasAnyLegalMoves(board, whiteTurn) {
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      let piece = board[row][col];
+      if (piece && isWhite(piece) === whiteTurn) {
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (isValidMove(board, row, col, r, c)) {
+              const newBoard = simulateMove(board, row, col, r, c);
+              if (!isCheck(newBoard, whiteTurn)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function isCheckmate(board, whiteTurn) {
+  return isCheck(board, whiteTurn) && !hasAnyLegalMoves(board, whiteTurn);
+}
+
+function isStalemate(board, whiteTurn) {
+  return !isCheck(board, whiteTurn) && !hasAnyLegalMoves(board, whiteTurn);
+}
+
+function isValidMove(board, fromRow, fromCol, toRow, toCol, ignoreCheck = false) {
+  const piece = board[fromRow][fromCol];
+  const target = board[toRow][toCol];
+  const dx = toRow - fromRow;
+  const dy = toCol - fromCol;
+  if (!piece) return false;
+  if (target && isWhite(piece) === isWhite(target)) return false;
+
+  switch (piece.toUpperCase()) {
+    case 'P': {
+      let direction = isWhite(piece) ? -1 : 1;
+      let startRow = isWhite(piece) ? 6 : 1;
+      if (dy === 0 && target === "") {
+        if (dx === direction) return true;
+        if (fromRow === startRow && dx === 2 * direction && board[fromRow + direction][fromCol] === "") return true;
+      }
+      if (Math.abs(dy) === 1 && dx === direction && target && isWhite(piece) !== isWhite(target)) return true;
+      return false;
+    }
+    case 'R': {
+      if ((dx === 0 || dy === 0) && clearPath(board, fromRow, fromCol, toRow, toCol)) return true;
+      break;
+    }
+    case 'B': {
+      if (Math.abs(dx) === Math.abs(dy) && clearPath(board, fromRow, fromCol, toRow, toCol)) return true;
+      break;
+    }
+    case 'Q': {
+      if ((dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy)) && clearPath(board, fromRow, fromCol, toRow, toCol)) return true;
+      break;
+    }
+    case 'N': {
+      return (Math.abs(dx) === 2 && Math.abs(dy) === 1) || (Math.abs(dx) === 1 && Math.abs(dy) === 2);
+    }
+    case 'K': {
+      return Math.abs(dx) <= 1 && Math.abs(dy) <= 1;
+    }
+  }
+  return false;
+}
+
+function clearPath(board, fromRow, fromCol, toRow, toCol) {
+  const dx = Math.sign(toRow - fromRow);
+  const dy = Math.sign(toCol - fromCol);
+  let r = fromRow + dx;
+  let c = fromCol + dy;
+  while (r !== toRow || c !== toCol) {
+    if (board[r][c] !== "") return false;
+    r += dx;
+    c += dy;
+  }
+  return true;
+}
+
+function renderBoard() {
+  boardElement.innerHTML = "";
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell", (row + col) % 2 === 0 ? "white" : "black");
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+
+      const piece = board[row][col];
+      if (pieceImages[piece]) {
+        const img = document.createElement("img");
+        img.src = pieceImages[piece];
+        img.classList.add("piece");
+        cell.appendChild(img);
+      }
+
+      cell.onclick = () => handleClick(row, col);
+      boardElement.appendChild(cell);
+    }
+  }
+}
+
+function handleClick(row, col) {
+  if (aiThinking || statusElement.textContent) return;
+  const piece = board[row][col];
+  clearHighlights();
+
+  if (selected) {
+    const [srcRow, srcCol] = selected;
+    if (isWhite(board[srcRow][srcCol]) && isValidMove(board, srcRow, srcCol, row, col)) {
+      const newBoard = simulateMove(board, srcRow, srcCol, row, col);
+      if (!isCheck(newBoard, true)) {
+        board = newBoard;
+        selected = null;
+        renderBoard();
+        checkWinner();
+        if (!statusElement.textContent) {
+          aiThinking = true;
+          setTimeout(() => {
+            aiMove();
+            aiThinking = false;
+          }, 500);
+        }
+        return;
+      }
+    }
+    selected = null;
+  } else if (piece && isWhite(piece)) {
+    selected = [row, col];
+    document.querySelector(`[data-row='${row}'][data-col='${col}']`).classList.add("selected");
+    showValidMoves(row, col);
+  }
+}
+
+function showValidMoves(row, col) {
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (isValidMove(board, row, col, r, c)) {
+        const newBoard = simulateMove(board, row, col, r, c);
+        if (!isCheck(newBoard, true)) {
+          document.querySelector(`[data-row='${r}'][data-col='${c}']`).classList.add("range");
+        }
+      }
+    }
+  }
+}
+
+function aiMove() {
+  let moves = [];
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      let piece = board[row][col];
+      if (piece && !isWhite(piece)) {
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (isValidMove(board, row, col, r, c)) {
+              const newBoard = simulateMove(board, row, col, r, c);
+              if (!isCheck(newBoard, false)) {
+                moves.push({ from: [row, col], to: [r, c] });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (moves.length) {
+    let move = moves[Math.floor(Math.random() * moves.length)];
+    board = simulateMove(board, ...move.from, ...move.to);
+    renderBoard();
+    checkWinner();
+  }
+}
+
+function checkWinner() {
+  if (isCheckmate(board, false)) {
+    statusElement.textContent = "You Win!";
+    showPopup("Congratulations! You checkmated the AI!");
+  } else if (isCheckmate(board, true)) {
+    statusElement.textContent = "AI Wins!";
+    showPopup("AI checkmated you. Better luck next time.");
+  } else if (isStalemate(board, false) || isStalemate(board, true)) {
+    statusElement.textContent = "Draw!";
+    showPopup("It's a stalemate. The game is a draw.");
+  }
+}
+
+function showPopup(message) {
+  popupText.textContent = message;
+  popupElement.style.display = "block";
+}
+
+popupClose.onclick = () => {
+  popupElement.style.display = "none";
+};
+
+function resetGame() {
+  board = JSON.parse(JSON.stringify(initialBoard));
+  selected = null;
+  aiThinking = false;
+  statusElement.textContent = "";
+  popupElement.style.display = "none";
+  renderBoard();
+}
+
+renderBoard();
+
+  </script>
+</body>
+</html>

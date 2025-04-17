@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <link rel="stylesheet" href="sty.css">
+</head>
+<body>
+  <div class="home-container">
+    <h1>Welcome!</h1>
+    <div class="options">
+      <button onclick="playWithAI()">Play with AI</button>
+      <button onclick="playWithOthers()">Play with Others</button>
+    </div>
+  </div>
+  <script>
+    function playWithAI() {
+      window.location.href = 'ai.html';
+    }
+    function playWithOthers() {
+      alert('Multiplayer functionality is under development!');
+    }
+  </script>
+</body>
+</html>
