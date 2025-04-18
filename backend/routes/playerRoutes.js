@@ -5,6 +5,6 @@ const {sign , login, logout} = require('../controllers/playerController');
 
 route.post('/sign', sign);
 route.post('/login',login);
-route.post('/logout',logout);
+route.get('/logout',logout);
 
 module.exports = route
