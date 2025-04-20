@@ -13,17 +13,19 @@ const server = http.createServer(app);
 const connectDB = require('../backend/config/db')
 connectDB();
 const io = new socket.Server(server,{
-  // cors: {
-  //   origin: "http://localhost:5173", 
-  //   credentials: true
-  // },
+  cors: {
+    origin: "http://localhost:5000", 
+    credentials: true
+  },
   transports: ["websocket"]
 });
 app.use(express.json());
-// app.use(cors({
-//   origin: "http://localhost:5173", // your frontend Vite server
-//   credentials: true
-// }));
+app.use(cors(
+  {
+  origin: "http://localhost:5000", // your frontend Vite server
+  credentials: true
+}
+));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({

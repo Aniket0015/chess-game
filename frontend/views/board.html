@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Chess Multiplayer</title>
@@ -23,24 +23,96 @@
   </style>
   
   <link rel="stylesheet" href="../chessboard.css">
-  
 </head>
 <body>
 
   <div id="board"></div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
   <script src="../chessboard.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 
+  <script type="module">
+    // Socket connection setup
+    const socket = io({
+      transports: ["websocket"], // Optional, for better stability
+    });
 
-  <script>
-    const board = Chessboard('board', {
+    // Initialize the Chessboard
+    let board = Chessboard('board', {
       position: 'start',
       draggable: true,
-      pieceTheme: '../img/chesspieces/wikipedia/{piece}.png'
+      pieceTheme: '../img/chesspieces/wikipedia/{piece}.png',
+
+      // Drag start handler: Prevent invalid moves
+      onDragStart: (source, piece, position, orientation) => {
+        // Check if the player is allowed to make the move
+        if (!window.playerId || !window.turnColor) return false;
+
+        const isWhite = window.playerId === 1; // White player
+        const pieceColor = piece.charAt(0); // Piece color ('w' or 'b')
+
+        // Prevent moving opponent's pieces or making moves out of turn
+        if ((isWhite && pieceColor !== 'w') || (!isWhite && pieceColor !== 'b')) {
+          return false;
+        }
+
+        if ((window.turnColor === 'w' && !isWhite) || (window.turnColor === 'b' && isWhite)) {
+          return false;
+        }
+
+        return true;
+      },
+
+      // Drop handler: Send move data to the server
+      onDrop: (source, target) => {
+        socket.emit("move", {
+          roomId: window.room,
+          player: window.playerId,
+          timestamp: Date.now(),
+          movedata: { from: source, to: target }
+        });
+      }
     });
+
+    // Receive the move confirmation from the server
+    socket.on("moveConfirmed", ({ move, fen, turn }) => {
+      board.position(fen); // Update board with new FEN
+      window.turnColor = turn; // Update the turn color
+    });
+
+    // Handle opponent's move
+    socket.on("omove", ({ move, fen, turn }) => {
+      board.position(fen); // Update board with new FEN
+      window.turnColor = turn; // Update the turn color
+    });
+
+    // Handle invalid move
+    socket.on("invalidMove", ({ message, fen }) => {
+      alert("Invalid move: " + message); // Show alert for invalid move
+      board.position(fen); // Restore board position
+    });
+
+    // Start the game and initialize player info
+    socket.on("startGame", ({ roomid, player }) => {
+      window.room = roomid; // Store the room ID
+      window.playerId = player; // Store the player ID (1 for white, 0 for black)
+      window.turnColor = 'w'; // White starts the game
+      board.start(); // Reset the board to initial position
+      console.log("Game started!", { roomid, player });
+    });
+
+    // Handle opponent disconnection
+    socket.on("opponentDisconnected", ({ message }) => {
+      alert(message); // Show alert if opponent disconnects
+    });
+
+    // Log the connection status for debugging
+    socket.on("connect", () => {
+      console.log("Connected to server");
+      socket.emit('multiplayerjoin');
+    });
+
   </script>
-  
 </body>
 </html>

@@ -1,12 +1,11 @@
-// /sockets/socketHandler.js
+const { Chess } = require("chess.js");
 const roomuser = [];
+const gamestate = new Map();
 
 function handleMultiplayerJoin(io, socket) {
   if (!roomuser.includes(socket)) {
     roomuser.push(socket);
-    console.log(
-      `User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`
-    );
+    console.log(`User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`);
   }
 
   if (roomuser.length >= 2) {
@@ -14,11 +13,14 @@ function handleMultiplayerJoin(io, socket) {
     const user2 = roomuser.shift();
 
     if (user1.connected && user2.connected) {
-      const roomid = `${user1.id}-${user2.id}*${Date.now() / 12}`;
+      const roomid = `${user1.id}-${user2.id}*${Date.now()}`;
       user1.join(roomid);
       user2.join(roomid);
       user1.roomid = roomid;
       user2.roomid = roomid;
+
+      const game = new Chess();
+      gamestate.set(roomid, game);
 
       user1.emit("startGame", { roomid, player: 1 });
       user2.emit("startGame", { roomid, player: 2 });
@@ -32,13 +34,46 @@ function handleMultiplayerJoin(io, socket) {
 }
 
 function handleMove(io, socket, data) {
-  if (!data || !data.roomId) {
-    console.log("Error: Invalid move data received", data?.movedata);
+  const { roomId, movedata } = data;
+  const game = gamestate.get(roomId);
+
+  if (!game) {
+    socket.emit("error", { message: "game not found" });
     return;
   }
 
-  const roomId = data.roomId;
-  console.log(`Move received from ${socket.id} in room ${roomId}`, data.movedata);
+  if (!movedata?.from || !movedata?.to) {
+    socket.emit("invalidMove", {
+      message: "Move must include 'from' and 'to'",
+      fen: game.fen(),
+    });
+    return;
+  }
+
+  let move;
+  try {
+    move = game.move(movedata);
+
+    if (move == null) {
+      socket.emit("invalidMove", {
+        message: "Illegal move",
+        fen: game.fen(),
+        legalMoves: game.moves({ verbose: true }),
+      });
+      return;
+    }
+
+    console.log(`Move received from ${socket.id} in room ${roomId}`, move);
+  } catch (err) {
+    console.log("error =", err.message);
+    socket.emit("invalidMove", {
+      message: "Invalid move format or not your turn",
+      error: err.message,
+      fen: game.fen(),
+      legalMoves: game.moves({ verbose: true }),
+    });
+    return;
+  }
 
   const roomExists = io.sockets.adapter.rooms.has(roomId);
   if (!roomExists) {
@@ -48,7 +83,18 @@ function handleMove(io, socket, data) {
   }
 
   try {
-    socket.to(roomId).emit("omove", data.movedata);
+    socket.to(roomId).emit("omove", {
+      move,
+      fen: game.fen(),
+      turn: game.turn(),
+    });
+
+    socket.emit("moveConfirmed", {
+      move,
+      fen: game.fen(),
+      turn: game.turn(),
+    });
+
     console.log(`Move successfully emitted to room ${roomId}`);
   } catch (err) {
     console.error("Error emitting move:", err);
@@ -62,9 +108,7 @@ function handleDisconnect(io, socket, reason) {
   const index = roomuser.indexOf(socket);
   if (index > -1) {
     roomuser.splice(index, 1);
-    console.log(
-      `Removed disconnected user from waiting room. Total waiting: ${roomuser.length}`
-    );
+    console.log(`Removed disconnected user from waiting room. Total waiting: ${roomuser.length}`);
   }
 
   if (socket.roomid) {
@@ -72,6 +116,7 @@ function handleDisconnect(io, socket, reason) {
       message: "Your opponent has disconnected",
     });
     console.log(`Notified room ${socket.roomid} about disconnection`);
+    gamestate.delete(socket.roomid);
   }
 }
 
