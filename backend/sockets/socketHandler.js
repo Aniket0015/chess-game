@@ -20,10 +20,18 @@ function handleMultiplayerJoin(io, socket) {
       user2.roomid = roomid;
 
       const game = new Chess();
-      gamestate.set(roomid, game);
 
-      user1.emit("startGame", { roomid, player: 1 });
-      user2.emit("startGame", { roomid, player: 2 });
+      gamestate.set(roomid, {
+        game,
+        players: {
+          w: user1.id,
+          b: user2.id,
+        },
+      });
+
+      user1.emit("startGame", { roomid, color: "w" });
+      user2.emit("startGame", { roomid, color: "b" });
+
       console.log(`Room ${roomid} created with ${user1.id} and ${user2.id}`);
     } else {
       if (user1.connected) roomuser.push(user1);
@@ -35,17 +43,29 @@ function handleMultiplayerJoin(io, socket) {
 
 function handleMove(io, socket, data) {
   const { roomId, movedata } = data;
-  const game = gamestate.get(roomId);
+  const gameData = gamestate.get(roomId);
 
-  if (!game) {
-    socket.emit("error", { message: "game not found" });
+  if (!gameData) {
+    socket.emit("error", { message: "Game not found" });
     return;
   }
+
+  const game = gameData.game;
+  const playerColor = socket.id === gameData.players.w ? "w" : "b";
 
   if (!movedata?.from || !movedata?.to) {
     socket.emit("invalidMove", {
       message: "Move must include 'from' and 'to'",
       fen: game.fen(),
+    });
+    return;
+  }
+
+  if (game.turn() !== playerColor) {
+    socket.emit("invalidMove", {
+      message: "It's not your turn!",
+      fen: game.fen(),
+      turn: game.turn(),
     });
     return;
   }
@@ -96,6 +116,30 @@ function handleMove(io, socket, data) {
     });
 
     console.log(`Move successfully emitted to room ${roomId}`);
+
+    if (game.game_over()) {
+      let result = "Draw";
+      if (game.in_checkmate()) {
+        result = `${playerColor === "w" ? "White" : "Black"} wins by checkmate`;
+      } else if (game.in_stalemate()) {
+        result = "Draw by stalemate";
+      } else if (game.in_threefold_repetition()) {
+        result = "Draw by repetition";
+      } else if (game.insufficient_material()) {
+        result = "Draw by insufficient material";
+      } else if (game.in_draw()) {
+        result = "Draw";
+      }
+
+      io.to(roomId).emit("gameOver", {
+        result,
+        fen: game.fen(),
+        winner: result.includes("wins") ? playerColor : null,
+      });
+
+      gamestate.delete(roomId);
+      console.log(`Game over in room ${roomId}: ${result}`);
+    }
   } catch (err) {
     console.error("Error emitting move:", err);
     socket.emit("error", { message: "Error processing your move" });

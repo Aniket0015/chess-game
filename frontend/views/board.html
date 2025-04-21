@@ -70,7 +70,7 @@
           roomId: window.room,
           player: window.playerId,
           timestamp: Date.now(),
-          movedata: { from: source, to: target }
+          movedata: { from: source, to: target ,promotion: "q" }
         });
       }
     });
@@ -94,12 +94,12 @@
     });
 
     // Start the game and initialize player info
-    socket.on("startGame", ({ roomid, player }) => {
+    socket.on("startGame", ({ roomid, color }) => {
       window.room = roomid; // Store the room ID
-      window.playerId = player; // Store the player ID (1 for white, 0 for black)
+      window.playerId = color==='w'?1:2; // Store the player ID (1 for white, 0 for black)
       window.turnColor = 'w'; // White starts the game
       board.start(); // Reset the board to initial position
-      console.log("Game started!", { roomid, player });
+      console.log("Game started!", { roomid, color });
     });
 
     // Handle opponent disconnection
