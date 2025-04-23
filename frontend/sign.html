@@ -3,110 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sign</title>
+  <title>Sign Up</title>
   <style>
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-image: url(background.jpg);
-  background-size: cover;
-}
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-image: url(background.jpg);
+      background-size: cover;
+    }
 
+    .container {
+      background: #fff;
+      color: #333;
+      border-radius: 10px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
 
-.container {
-  background: #fff;
-  color: #333;
-  border-radius: 10px;
-  padding: 30px;
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Form Styling */
-form {
-  display: flex;
-  flex-direction: column;
-}
+    form label {
+      text-align: left;
+      font-weight: bold;
+      margin: 10px 0 5px;
+    }
 
-form label {
-  text-align: left;
-  font-weight: bold;
-  margin: 10px 0 5px;
-}
+    form input {
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
 
-form input {
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-}
+    form button {
+      background: #6a11cb;
+      color: white;
+      font-weight: bold;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
 
-form button {
-  background: #6a11cb;
-  color: white;
-  font-weight: bold;
-  border: none;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
+    form button:hover {
+      background: #2575fc;
+      transition: 0.3s;
+    }
 
-form button:hover {
-  background: #2575fc;
-  transition: 0.3s;
-}
-
-
-.error-message {
-  color: red;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-/* Home Page Styling */
-.options button {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 15px;
-  font-size: 16px;
-  background: #6a11cb;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.options button:hover {
-  background: #2575fc;
-  transition: 0.3s;
-}
-
-</style>
-  
+    #message {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <div class="login-container">
-    <h1>sign</h1>
-    <form id="loginForm" action="/sign" method="post">
+  <div class="container">
+    <h1>Sign Up</h1>
+    <form id="sign">
       <label for="username">Username</label>
       <input type="text" id="username" name="name" placeholder="Enter your username" required>
       <label for="password">Password</label>
       <input type="password" id="password" name="password" placeholder="Enter your password" required>
-      <button type="submit">sign</button>
+      <button type="submit">Sign Up</button>
     </form>
-   
+    <p id="message"></p>
   </div>
-  
+
+  <script>
+    document.getElementById('sign').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/sign', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('message').textContent = data.message || 'Something went wrong';
+          document.getElementById('message').style.color = 'red';
+          return;
+        }
+
+        if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          document.getElementById('message').textContent = 'Signup successful!';
+          document.getElementById('message').style.color = 'green';
+        }
+
+      } catch (err) {
+        document.getElementById('message').textContent = 'Network error';
+        document.getElementById('message').style.color = 'red';
+      }
+    });
+  </script>
 </body>
-
-
 </html>

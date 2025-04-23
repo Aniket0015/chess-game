@@ -4,12 +4,14 @@ const sign = async (req, res) => {
   console.log("sign");
   const { name, password } = req.body;
   const existing =  await Player.findOne({username:name});
-  if (existing) return res.status(400).json({ message: " already user" });
+  if (existing)   return res.status(400).json({ message: " username already exists. choose a different one." });
+  else {
   
   const user = new Player({username:name, password})
   console.log("sign", req.body);
    await user.save();
-  return   res.redirect("http://localhost:5000/login.html");
+   return res.status(200).json({ redirect:"/login.html" });
+  }
 };
 
 const login = async  (req, res) => {
