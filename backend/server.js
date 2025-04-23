@@ -22,7 +22,7 @@ const io = new socket.Server(server,{
 app.use(express.json());
 app.use(cors(
   {
-  origin: "http://localhost:5000", // your frontend Vite server
+  origin: "http://localhost:5000", // in future frontend in  Vite server
   credentials: true
 }
 ));
