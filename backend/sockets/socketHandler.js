@@ -3,15 +3,30 @@ const roomuser = [];
 const gamestate = new Map();
 
 function handleMultiplayerJoin(io, socket) {
-  if (!roomuser.includes(socket)) {
-    roomuser.push(socket);
-    console.log(`User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`);
+  console.log(`handleMultiplayerJoin called for ${socket.id}`);
+
+  // Prevent duplicate join attempts
+  if (socket.hasJoined) {
+    console.log(`Socket ${socket.id} already in queue or game; skipping join.`);
+    return;
+  }
+  socket.hasJoined = true;
+
+  // Prevent joining if already in a game
+  if (socket.roomid) {
+    console.log(`Socket ${socket.id} already has room ${socket.roomid}; skipping queue.`);
+    return;
   }
 
+  roomuser.push(socket);
+  console.log(`User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`);
+
+  // When two players are waiting, pair them
   if (roomuser.length >= 2) {
     const user1 = roomuser.shift();
     const user2 = roomuser.shift();
 
+    // Double-check they’re still connected
     if (user1.connected && user2.connected) {
       const roomid = `${user1.id}-${user2.id}*${Date.now()}`;
       user1.join(roomid);
@@ -19,8 +34,11 @@ function handleMultiplayerJoin(io, socket) {
       user1.roomid = roomid;
       user2.roomid = roomid;
 
-      const game = new Chess();
+      // Mark them as in-game so they can’t re-join the queue
+      user1.hasJoined = true;
+      user2.hasJoined = true;
 
+      const game = new Chess();
       gamestate.set(roomid, {
         game,
         players: {
@@ -32,129 +50,126 @@ function handleMultiplayerJoin(io, socket) {
       user1.emit("startGame", { roomid, color: "w" });
       user2.emit("startGame", { roomid, color: "b" });
 
-      console.log(`Room ${roomid} created with ${user1.id} and ${user2.id}`);
+      console.log(`Room ${roomid} created with ${user1.id} (w) and ${user2.id} (b)`);
     } else {
-      if (user1.connected) roomuser.push(user1);
-      if (user2.connected) roomuser.push(user2);
-      console.log("Match failed - a user disconnected before room creation");
+      // If one disconnected, put the other back in queue
+      [user1, user2].forEach((u) => {
+        if (u && u.connected) {
+          u.hasJoined = false;
+          roomuser.push(u);
+        }
+      });
+      console.log("Match failed—one user disconnected before room creation");
     }
   }
 }
 
 function handleMove(io, socket, data) {
+  console.log(`handleMove called for ${socket.id}`, data);
+
   const { roomId, movedata } = data;
   const gameData = gamestate.get(roomId);
 
   if (!gameData) {
-    socket.emit("error", { message: "Game not found" });
-    return;
+    return socket.emit("error", { message: "Game not found" });
   }
 
   const game = gameData.game;
   const playerColor = socket.id === gameData.players.w ? "w" : "b";
 
   if (!movedata?.from || !movedata?.to) {
-    socket.emit("invalidMove", {
+    return socket.emit("invalidMove", {
       message: "Move must include 'from' and 'to'",
       fen: game.fen(),
     });
-    return;
   }
 
   if (game.turn() !== playerColor) {
-    socket.emit("invalidMove", {
+    return socket.emit("invalidMove", {
       message: "It's not your turn!",
       fen: game.fen(),
       turn: game.turn(),
     });
-    return;
   }
 
   let move;
   try {
     move = game.move(movedata);
-
-    if (move == null) {
-      socket.emit("invalidMove", {
+    if (!move) {
+      return socket.emit("invalidMove", {
         message: "Illegal move",
         fen: game.fen(),
         legalMoves: game.moves({ verbose: true }),
       });
-      return;
     }
-
-    console.log(`Move received from ${socket.id} in room ${roomId}`, move);
+    console.log(`Move applied for ${socket.id} in room ${roomId}:`, move);
   } catch (err) {
-    console.log("error =", err.message);
-    socket.emit("invalidMove", {
+    console.error(`Error applying move for ${socket.id}:`, err);
+    return socket.emit("invalidMove", {
       message: "Invalid move format or not your turn",
       error: err.message,
       fen: game.fen(),
       legalMoves: game.moves({ verbose: true }),
     });
-    return;
   }
 
-  const roomExists = io.sockets.adapter.rooms.has(roomId);
-  if (!roomExists) {
-    console.log(`Room ${roomId} does not exist!`);
-    socket.emit("error", { message: "Game room not found" });
-    return;
+  if (!io.sockets.adapter.rooms.has(roomId)) {
+    console.warn(`Room ${roomId} no longer exists`);
+    return socket.emit("error", { message: "Game room not found" });
   }
 
-  try {
-    socket.to(roomId).emit("omove", {
-      move,
-      fen: game.fen(),
-      turn: game.turn(),
-    });
+  // Broadcast the move
+  socket.to(roomId).emit("omove", {
+    move,
+    fen: game.fen(),
+    turn: game.turn(),
+  });
+  socket.emit("moveConfirmed", {
+    move,
+    fen: game.fen(),
+    turn: game.turn(),
+  });
 
-    socket.emit("moveConfirmed", {
-      move,
-      fen: game.fen(),
-      turn: game.turn(),
-    });
+  console.log(`Move broadcast in room ${roomId}.`);
 
-    console.log(`Move successfully emitted to room ${roomId}`);
-
-    if (game.game_over()) {
-      let result = "Draw";
-      if (game.in_checkmate()) {
-        result = `${playerColor === "w" ? "White" : "Black"} wins by checkmate`;
-      } else if (game.in_stalemate()) {
-        result = "Draw by stalemate";
-      } else if (game.in_threefold_repetition()) {
-        result = "Draw by repetition";
-      } else if (game.insufficient_material()) {
-        result = "Draw by insufficient material";
-      } else if (game.in_draw()) {
-        result = "Draw";
-      }
-
-      io.to(roomId).emit("gameOver", {
-        result,
-        fen: game.fen(),
-        winner: result.includes("wins") ? playerColor : null,
-      });
-
-      gamestate.delete(roomId);
-      console.log(`Game over in room ${roomId}: ${result}`);
+  // Check for game over
+  if (game.isGameOver()) {
+    let result = "Draw";
+    if (game.isCheckmate()) {
+      result = `${playerColor === "w" ? "White" : "Black"} wins by checkmate`;
+    } else if (game.isStalemate()) {
+      result = "Draw by stalemate";
+    } else if (game.isThreefoldRepetition()) {
+      result = "Draw by repetition";
+    } else if (game.isInsufficientMaterial()) {
+      result = "Draw by insufficient material";
+    } else if (game.isDraw()) {
+      result = "Draw";
     }
-  } catch (err) {
-    console.error("Error emitting move:", err);
-    socket.emit("error", { message: "Error processing your move" });
+
+
+    io.to(roomId).emit("gameOver", {
+      result,
+      fen: game.fen(),
+      winner: result.includes("wins") ? playerColor : null,
+    });
+
+    gamestate.delete(roomId);
+    console.log(`Game over in room ${roomId}: ${result}`);
   }
 }
 
 function handleDisconnect(io, socket, reason) {
   console.log(`User ${socket.id} disconnected: ${reason}`);
 
-  const index = roomuser.indexOf(socket);
-  if (index > -1) {
-    roomuser.splice(index, 1);
-    console.log(`Removed disconnected user from waiting room. Total waiting: ${roomuser.length}`);
+  // Remove from waiting room
+  const idx = roomuser.indexOf(socket);
+  if (idx !== -1) {
+    roomuser.splice(idx, 1);
+    console.log(`Removed ${socket.id} from waiting room. Now ${roomuser.length} waiting.`);
   }
 
+  // Notify opponent if in a game
   if (socket.roomid) {
     socket.to(socket.roomid).emit("opponentDisconnected", {
       message: "Your opponent has disconnected",
