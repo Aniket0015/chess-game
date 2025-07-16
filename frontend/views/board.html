@@ -16,6 +16,15 @@
         position: relative;
       }
 
+      #turnIndicator {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px 20px;
+        border-radius: 8px;
+      }
+
       #board {
         width: 480px;
         margin-bottom: 20px;
@@ -40,13 +49,23 @@
         font-size: 18px;
         cursor: pointer;
       }
+      #playerColor {
+        font-size: 18px;
+        color: #fff;
+        margin-bottom: 5px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 8px 16px;
+        border-radius: 8px;
+      }
     </style>
 
     <link rel="stylesheet" href="../chessboard.css" />
   </head>
   <body>
+    <div id="playerColor">You are: ...</div>
+    <div id="turnIndicator">Waiting for opponent...</div>
     <div id="board"></div>
-
+      <div id="alert"></div>
     <div id="gameOverOverlay">
       <div id="gameOverText"></div>
       <button id="btnAgain">Play Again</button>
@@ -60,7 +79,6 @@
     <script type="module">
       const socket = io({ transports: ["websocket"] });
 
-      // Initialize the board
       const board = Chessboard("board", {
         position: "start",
         draggable: true,
@@ -78,12 +96,10 @@
           return true;
         },
         onDrop: (source, target) => {
-          // ignore zero‑move
           if (source === target) {
             board.position(board.fen());
             return;
           }
-          const legal = board.position();
           socket.emit("move", {
             roomId: window.room,
             player: window.playerId,
@@ -97,15 +113,19 @@
       socket.on("moveConfirmed", ({ fen, turn }) => {
         board.position(fen);
         window.turnColor = turn;
+        updateTurnIndicator();
+         document.getElementById('alert').innerHTML=""
       });
 
       socket.on("omove", ({ fen, turn }) => {
         board.position(fen);
         window.turnColor = turn;
+        updateTurnIndicator();
+       
       });
 
       socket.on("invalidMove", ({ message, fen }) => {
-        alert("Invalid move: " + message);
+       document.getElementById('alert').innerHTML=("Invalid move: " + message);
         board.position(fen);
       });
 
@@ -114,10 +134,21 @@
         window.playerId = color === "w" ? 1 : 2;
         window.turnColor = "w";
         board.start();
+        updateTurnIndicator();
+        document.getElementById("playerColor").textContent =
+          "You are: " + (color === "w" ? "White" : "Black");
+        document.getElementById("playerColor").style.color =
+          color === "w" ? "White" : "Black";
+        document.getElementById("playerColor").style.backgroundColor =
+          color === "w" ? "Black" : "White";
       });
 
       socket.on("opponentDisconnected", ({ message }) => {
-        alert(message);
+       document.getElementById('alert').innerHTML=(message+" ,,, moving to home screen");
+       setTimeout(()=>{
+       window.location.href= '/home';
+       },
+      2000)
       });
 
       // Game over overlay & rematch
@@ -146,11 +177,26 @@
         overlay.style.visibility = "hidden";
         board.position(fen || "start");
         window.turnColor = turn;
+        updateTurnIndicator();
       });
 
       socket.on("connect", () => {
         socket.emit("multiplayerjoin");
       });
+
+      function updateTurnIndicator() {
+        const indicator = document.getElementById("turnIndicator");
+        if (!indicator || !window.turnColor || !window.playerId) return;
+
+        const isWhite = window.playerId === 1;
+        const yourTurn =
+          (isWhite && window.turnColor === "w") ||
+          (!isWhite && window.turnColor === "b");
+
+        indicator.textContent = yourTurn
+          ? "Your Turn"
+          : "Waiting for Opponent...";
+      }
     </script>
   </body>
 </html>

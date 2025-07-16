@@ -22,6 +22,7 @@ const login = async  (req, res) => {
   if (existing.password !== password)
     return res.status(400).json({ message: "wrong password" });
   req.session.valid = true;
+  req.session.id=name;
   console.log(req.body);
   return res.redirect("/home") ;
 };

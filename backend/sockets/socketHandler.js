@@ -14,12 +14,16 @@ function handleMultiplayerJoin(io, socket) {
 
   // Prevent joining if already in a game
   if (socket.roomid) {
-    console.log(`Socket ${socket.id} already has room ${socket.roomid}; skipping queue.`);
+    console.log(
+      `Socket ${socket.id} already has room ${socket.roomid}; skipping queue.`
+    );
     return;
   }
 
   roomuser.push(socket);
-  console.log(`User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`);
+  console.log(
+    `User ${socket.id} joined waiting room. Total waiting: ${roomuser.length}`
+  );
 
   // When two players are waiting, pair them
   if (roomuser.length >= 2) {
@@ -28,7 +32,9 @@ function handleMultiplayerJoin(io, socket) {
 
     // Double-check they’re still connected
     if (user1.connected && user2.connected) {
-      const roomid = `${user1.id}-${user2.id}*${Date.now()}`;
+      const roomid = `${user1.id}-${user2.id}-${
+        Math.floor(Math.random() * 10) * Date.now()
+      }-${Date.now()}`;
       user1.join(roomid);
       user2.join(roomid);
       user1.roomid = roomid;
@@ -50,7 +56,9 @@ function handleMultiplayerJoin(io, socket) {
       user1.emit("startGame", { roomid, color: "w" });
       user2.emit("startGame", { roomid, color: "b" });
 
-      console.log(`Room ${roomid} created with ${user1.id} (w) and ${user2.id} (b)`);
+      console.log(
+        `Room ${roomid} created with ${user1.id} (w) and ${user2.id} (b)`
+      );
     } else {
       // If one disconnected, put the other back in queue
       [user1, user2].forEach((u) => {
@@ -147,7 +155,6 @@ function handleMove(io, socket, data) {
       result = "Draw";
     }
 
-
     io.to(roomId).emit("gameOver", {
       result,
       fen: game.fen(),
@@ -166,7 +173,9 @@ function handleDisconnect(io, socket, reason) {
   const idx = roomuser.indexOf(socket);
   if (idx !== -1) {
     roomuser.splice(idx, 1);
-    console.log(`Removed ${socket.id} from waiting room. Now ${roomuser.length} waiting.`);
+    console.log(
+      `Removed ${socket.id} from waiting room. Now ${roomuser.length} waiting.`
+    );
   }
 
   // Notify opponent if in a game
