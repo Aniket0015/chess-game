@@ -8,6 +8,7 @@ const playerschema = new mongoose.Schema({
     gamesPlayed: { type: Number, default: 0 },
     wins: { type: Number, default: 0 },
     losses: { type: Number, default: 0 },
+    gameID:[ {type:String, default: ""}]
 });
 
 module.exports= mongoose.model('player',playerschema);

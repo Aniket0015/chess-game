@@ -22,8 +22,9 @@ const io = new socket.Server(server,{
 app.use(express.json());
 app.use(cors(
   {
-  origin: "http://localhost:5000", // in future frontend in  Vite server
-  credentials: true
+  origin: "https://ead9088399e2.ngrok-free.app", // in future frontend in  Vite server
+  credentials: true,
+  allowedHeaders:"ngrok-skip-browser-warning"
 }
 ));
 app.use(express.urlencoded({ extended: true }));
@@ -37,6 +38,6 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use('/', userroute)
 app.use('/', gameroute)
-server.listen(5000,()=>{
+server.listen(5000,"0.0.0.0",()=>{
     console.log("server is on port 5000");
 })

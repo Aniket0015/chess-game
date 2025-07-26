@@ -166,11 +166,12 @@
 
       btnAgain.addEventListener("click", () => {
         overlay.style.visibility = "hidden";
-        socket.emit("rematchRequest", { roomId: window.room });
+        // socket.emit("rematchRequest", { roomId: window.room });
+        window.navigator("board.html");
       });
 
       btnHome.addEventListener("click", () => {
-        window.location.href = "/";
+       window.location.href= '/home';
       });
 
       socket.on("rematchStart", ({ fen, turn }) => {
